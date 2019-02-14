@@ -17,7 +17,7 @@ public class Cliente implements Serializable{
 		return NIF;
 	}
 	public void setNIF(String NIF) {
-		NIF = NIF;
+		this.NIF = NIF;
 	}
 	public String getNombre() {
 		return nombre;

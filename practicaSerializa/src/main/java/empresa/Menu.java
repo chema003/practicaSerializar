@@ -2,6 +2,9 @@ package empresa;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileInputStream;
@@ -12,78 +15,120 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import com.esotericsoftware.jsonbeans.Json;
 import com.esotericsoftware.jsonbeans.OutputType;
+
+import serializadores.GestorSerializador;
 import serializadores.SerializarCliente;
 
 
 @SuppressWarnings("unused")
 public class Menu {
 
+	static String rutaJson = "datos/clientes.json";
 	static Collection <Cliente> clientesEmpresa = new ArrayList<>();
-	static String rutaJson = "datos/clientes.dat";
 	
 	public static void main(String[] args) {
-		Json json = new Json();
+//		Json json = new Json();
 //		Collection <Cliente> clientesEmpresa = new ArrayList<>();
-		
-		
-		
+		GestorSerializador gestor = new GestorSerializador();
+	
 		Cliente cliente1 = new Cliente("11111111A", "nombre1", 911111111, "direcc1", 1000);
-		clientesEmpresa.add(cliente1);
+		Cliente cliente2 = new Cliente("22222222B", "nombre2", 911111112, "direcc2", 2000);
+//		anadirCliente(cliente1, gestor);
+//		anadirCliente(cliente2, gestor);
+//		anadirCliente(cliente1, gestor);
 		
-	
-
+		Cliente buscado = buscarCliente("11111111A", gestor);
+		if(buscado!=null) {
+			System.out.println(buscado);
+		}else {
+			System.out.println("Cliente no encontrado.");
+		}
+		
+		borrarCliente("11111111A", gestor);
+		
+		try {
+			listarClientes(rutaJson, gestor);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public static void anadirCliente (Cliente c) {
-//		Collection<Cliente> clientesEmpresa = new ArrayList<>();
-		String rutaJson = "datos/clientes.dat";
-		Json json = new Json();
-		json.setSerializer(Cliente.class, new SerializarCliente());
-		clientesEmpresa .add(c);
-		guardarListaClientesEnJson(clientesEmpresa, rutaJson);//No sé por qué no me reconoce el método.
+	public static void anadirCliente (Cliente c, GestorSerializador gestor) {
+		
+		clientesEmpresa = gestor.getClientes(rutaJson);
 	
+		if(clientesEmpresa.isEmpty()) {
+			clientesEmpresa.add(c);
+			System.out.println("Archivo vacio. Primer cliente.");
+			gestor.guardarClienteEnJson(c, rutaJson);
+			
+		}else{
+			boolean contenido = false;
+			for (Cliente cliente : clientesEmpresa) {
+				if(cliente.getNIF().equals(c.getNIF())){
+					System.out.println("El cliente ya se encuentra entre los clientes de la empresa.");
+					contenido = true;
+				}
+			}
+			if(!contenido) {
+				gestor.guardarClienteEnJson(c, rutaJson);
+				System.out.println("Cliente nuevo añadido.");
+			}
+		}		
+	}
+	
+	
+	public static void listarClientes(String ruta, GestorSerializador gestor) throws IOException {
+		
+		List<String> listaJson = new ArrayList<>();
+		try (BufferedReader br = Files.newBufferedReader(Paths.get(ruta))) {
+			listaJson = br.lines().collect(Collectors.toList());
+			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		listaJson.forEach(System.out::println);
+//			System.out.println(gestor.getClientes(ruta));
 		
 	}
 	
-	public static void listarClientes(String ruta) {
-//		Collection<Cliente> clientesEmpresa = new ArrayList<>();
-		String rutaJson = "datos/clientes.dat";
-		clientesEmpresa.getCliente(rutaJson);//¿?
-		System.out.println(clientesEmpresa);
+	public static Cliente buscarCliente (String NIF, GestorSerializador gestor) {
 		
-	}
+		clientesEmpresa = gestor.getClientes(rutaJson);
 	
-	public static Cliente buscarCliente (String NIF) {
-		Cliente clienteBuscado = new Cliente();
-		clienteBuscado.setNIF(NIF);
-		clientesEmpresa.getCliente(rutaJson);//¿?
+		Cliente clienteBuscado = null;
 		
 		for (Cliente cliente : clientesEmpresa) {
-			if(cliente.getNIF()==clienteBuscado.getNIF()) {
+			if(cliente.getNIF().equals(NIF)){
 				clienteBuscado = cliente;
-			}else {
-				clienteBuscado = null;
-				System.out.println("Cliente no encontrado");
+				System.out.println("Cliente encontrado en su lista de clientes");
 			}
 		}
-		System.out.println("Cliente encontrado en su lista de clientes");
 		return clienteBuscado;
 	}
 	
-	public static void borrarCliente (Cliente clienteABorrar) {
-		clientesEmpresa.getCliente(rutaJson);//¿? Hay que leerlo cada vez?
+	public static void borrarCliente (String  NIFABorrar, GestorSerializador gestor) {
+	
+		clientesEmpresa = gestor.getClientes(rutaJson);
+		Collection<Cliente> listaAux = new ArrayList<>();
 		
 		for (Cliente cliente : clientesEmpresa) {
-			if(clientesEmpresa.contains(clienteABorrar))
-				clienteABorrar=null;
+			if(!cliente.getNIF().equals(NIFABorrar)) {
+				listaAux.add(cliente);
+			}
 		}
-		guardarListaClientesEnJson(clientesEmpresa);//Se debe hacer esto para actualizar??
-		
-		}
-		
-	
+			gestor.guardarListaClientesEnJson(listaAux, rutaJson);
 
+		}
+//leer, deserializar, contine, incluyo todos menos el que quiero borrar en un Array aux. Y este Array lo guardo.	
+	
+	
 }
